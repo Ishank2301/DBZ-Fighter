@@ -1,18 +1,39 @@
-# CAMERA SETTINGS:
+"""
+Central configuration for the Gesture Vision Engine.
+All tunable constants live here — no magic numbers scattered through modules.
+"""
+
+import os
+
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# Asset Paths:
+SPRITES_DIR = os.path.join(ROOT, "assets", "effects", "sprites")
+TEXTURES_DIR = os.path.join(ROOT, "assets", "effects", "textures")
+SOUNDS_DIR = os.path.join(ROOT, "assets", "sounds")
+ICONS_DIR = os.path.join(ROOT, "assets", "ui", "icons")
+HUD_DIR = os.path.join(ROOT, "assets", "ui", "hud")
+FONTS_DIR = os.path.join(ROOT, "assets", "ui", "fonts")
+DATASET_DIR = os.path.join(ROOT, "data", "gesture_dataset")
+MODEL_PATH = os.path.join(ROOT, "data", "gesture_model.pkl")
+
+# Camera:
 CAMERA_INDEX = 0
-FRAME_WIDTH = 1280
-FRAME_HEIGHT = 720
-TARGET_FPS = 60
+CAMERA_WIDTH = 1280
+CAMERA_HEIGHT = 720
+TARGET_FPS = 30
 
+# MediaPipe Pose
+MP_MIN_DETECTION_CONFIDENCE = 0.6
+MP_MIN_TRACKING_CONFIDENCE = 0.5
+MP_MODEL_COMPLEXITY = 1  # 0=fast, 1=balanced, 2=accurate
 
-# MEDIA PIPELINE POSE:
-MP_MIN_DETECTION_CONFIDENCE = 0.7
-MP_MIN_TRACKING_CONFIDENCE = 0.7
-MP_MODEL_COMPLEXITY = 1  # 0:LITE, 1:FULL, 2:HEAVY
+# Feature extraction
+N_LANDMARKS = 33  # MediaPipe full-body landmarks
+FEATURE_DIM = 212  # total feature vector length
 
-
-# GESTURE CLASSIFIER:
-GESTURE_LABELS = [
+# Gesture classes (order = label encoding)
+GESTURES = [
     "idle",
     "charging",
     "firing",
@@ -22,43 +43,81 @@ GESTURE_LABELS = [
     "power_up",
     "block",
 ]
-MODEL_PATH = "models/gesture_classifier.pkl"
-CONFIDENCE_THRESHOLD = 0.65  # MIN PROBABILITY TO ACCEPT A PREDICTION
+N_GESTURES = len(GESTURES)
 
+# Smoothing / voting
+EMA_ALPHA = 0.35  # exponential moving average for landmark smoothing
+VOTE_BUFFER_SIZE = 5  # majority vote window (frames)
+VOTE_THRESHOLD = 3  # minimum votes needed to confirm a gesture
 
-# STATE MACHINE:
-CHARGE_HOLD_FRAMES = 15  # FRAMES GESTURE MUST BE HOLD TO TRIGGER
-COOLDOWN_FRAMES = 30  # fRAMES BETWEEN FIRING
+# State machine
+HOLD_FRAMES: dict[str, int] = {
+    # gesture: minimum consecutive frames required before activation
+    "idle": 1,
+    "charging": 6,
+    "firing": 4,
+    "kamehameha": 8,
+    "spirit_bomb": 10,
+    "teleport": 5,
+    "power_up": 6,
+    "block": 4,
+}
+COOLDOWN_FRAMES: dict[str, int] = {
+    # gesture: frames to wait before same gesture can fire again
+    "idle": 0,
+    "charging": 0,
+    "firing": 18,
+    "kamehameha": 45,
+    "spirit_bomb": 60,
+    "teleport": 30,
+    "power_up": 40,
+    "block": 15,
+}
 
+#  Effect system
+MAX_ACTIVE_EFFECTS = 12
+PARTICLE_POOL_SIZE = 256
+EFFECT_ALPHA_DECAY = 6  # alpha reduction per frame for fading effects
 
-# FEATURE EXTRACTION;
-USE_ANGLES = True
-USE_velocity = True
-smoothing_window = 5
+# Spritesheet animation frame rates (fps) per effect type
+AURA_FPS = 12
+BEAM_FPS = 18
+EXPLOSION_FPS = 20
+RING_FPS = 16
+SPARK_FPS = 24
+SMOKE_FPS = 12
+SPIRIT_BOMB_FPS = 14
 
-# effects:
-PARTICLE_COUNT = 60
-AURA_COLOR_CHARGING = (255, 200, 50)  # GOLD COLOR
-AURA_COLOR_CHARGING = (50, 150, 255)  # BLUE COLOR
-AURA_COLOR_CHARGING = (100, 200, 255)  # CYAN-WHITE COLOR
-BLAST_SPEED = 18
+# HUD layout
+HUD_ENERGY_BAR_POS = (20, 30)  # top-left corner of energy bar
+HUD_GESTURE_ICON_POS = (20, 70)  # top-left of active gesture icon
+HUD_ICON_SIZE = 48  # displayed size (icons are 128px, scaled)
+HUD_GESTURE_LABEL_Y = 130  # y-position of gesture name text
+HUD_COOLDOWN_POS = (20, 140)  # cooldown ring position
+HUD_FONT_LARGE = 28  # pt
+HUD_FONT_SMALL = 18  # pt
+HUD_FONT_NAME = "ShareTechMono-Regular.ttf"  # falls back to cv2 default
 
+#  Energy system
+MAX_ENERGY = 100.0
+ENERGY_REGEN = 0.4  # units per frame at idle
+ENERGY_COSTS: dict[str, float] = {
+    "idle": 0.0,
+    "charging": -2.0,  # negative = gain energy
+    "firing": 8.0,
+    "kamehameha": 25.0,
+    "spirit_bomb": 35.0,
+    "teleport": 15.0,
+    "power_up": 10.0,
+    "block": 0.5,
+}
 
-# HUD OVERLAY
-HUD_COLOR_PRIMARY = (255, 215, 0)  # GOLD
-HUD_COLOR_SECONDARY = (30, 144, 255)  # BLUE
-HUD_ALPHA = 0.75
-ENERGY_MAX = 100
-ENERGY_REGEN_RATE = 0.4
-ENERGY_COST_FIRE = 30
-ENERGY_COST_KAMEHAMEHA = 60
+# Sound
+AUDIO_ENABLED = True
+MASTER_VOLUME = 0.8
+MUSIC_VOLUME = 0.3
+SFX_VOLUME = 0.9
 
-
-# PERFORMANCE:
-SHOW_FPS = True
-SHOW_LATENCY = True
-PREF_LOG_INTERVAL = 60
-
-# DATASET COLLECTION:
-DATASET_DIR = "data/gesture_dataset"
-FRAME_PER_GESTURE = 200  # PER LABEL SAMPLE COLLECTED
+#  Performance
+SKIP_FRAMES = 0  # 0 = process every frame, 1 = every other, etc.
+RENDER_SCALE = 1.0  # 0.5 = half-res rendering then upscale
