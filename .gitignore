@@ -10,6 +10,9 @@ build/
 .eggs/
 
 # Virtual environments
+# Venv was still pushed.
+# Add .venv to resolve this.
+
 venv/
 .venv/
 env/
