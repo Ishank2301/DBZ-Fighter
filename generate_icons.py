@@ -15,6 +15,8 @@ All icons: 128x128 RGBA PNG, transparent background.
 Run from your project root:  python generate_icons_dbz.py
 """
 
+# This is totally created by claude due to resource limitation.
+
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
 import math, os
