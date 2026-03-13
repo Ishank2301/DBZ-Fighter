@@ -4,7 +4,6 @@ Converts a smoothed list of 33 MediaPipe landmarks into a fixed-length
 
 Feature breakdown (212 total):
   [0:99]   — normalised (x, y, z) for all 33 landmarks         = 99 dims
-             (normalised relative to shoulder-midpoint & torso scale)
   [99:165] — pairwise distances for 66 key joint pairs         = 66 dims
   [165:195]— joint angles for 30 important body angles         = 30 dims
   [195:212]— velocity features (Δ per frame) for 17 key joints = 17 dims
@@ -16,47 +15,32 @@ from src.vision import landmark_utils as lmu
 
 # ── Key joint pairs for pairwise distance features (66 pairs) ────────────────
 _DIST_PAIRS = [
-    # wrist–shoulder
     (lmu.LEFT_WRIST, lmu.LEFT_SHOULDER),
     (lmu.RIGHT_WRIST, lmu.RIGHT_SHOULDER),
-    # wrist–elbow
     (lmu.LEFT_WRIST, lmu.LEFT_ELBOW),
     (lmu.RIGHT_WRIST, lmu.RIGHT_ELBOW),
-    # elbow–shoulder
     (lmu.LEFT_ELBOW, lmu.LEFT_SHOULDER),
     (lmu.RIGHT_ELBOW, lmu.RIGHT_SHOULDER),
-    # wrist–hip
     (lmu.LEFT_WRIST, lmu.LEFT_HIP),
     (lmu.RIGHT_WRIST, lmu.RIGHT_HIP),
-    # wrist–wrist (key for charging / kamehameha)
     (lmu.LEFT_WRIST, lmu.RIGHT_WRIST),
-    # wrist–nose (spirit bomb / teleport)
     (lmu.LEFT_WRIST, lmu.NOSE),
     (lmu.RIGHT_WRIST, lmu.NOSE),
-    # wrist–knee (power-up wide stance)
     (lmu.LEFT_WRIST, lmu.LEFT_KNEE),
     (lmu.RIGHT_WRIST, lmu.RIGHT_KNEE),
-    # shoulder–shoulder
     (lmu.LEFT_SHOULDER, lmu.RIGHT_SHOULDER),
-    # hip–shoulder
     (lmu.LEFT_HIP, lmu.LEFT_SHOULDER),
     (lmu.RIGHT_HIP, lmu.RIGHT_SHOULDER),
-    # hand–forehead (teleport: index to nose area)
     (lmu.RIGHT_INDEX, lmu.NOSE),
     (lmu.LEFT_INDEX, lmu.NOSE),
-    # elbows cross (block X)
     (lmu.LEFT_ELBOW, lmu.RIGHT_WRIST),
     (lmu.RIGHT_ELBOW, lmu.LEFT_WRIST),
-    # knee–ankle
     (lmu.LEFT_KNEE, lmu.LEFT_ANKLE),
     (lmu.RIGHT_KNEE, lmu.RIGHT_ANKLE),
-    # hip–knee
     (lmu.LEFT_HIP, lmu.LEFT_KNEE),
     (lmu.RIGHT_HIP, lmu.RIGHT_KNEE),
-    # shoulder-midpoint to wrists (vertical raise)
     (lmu.LEFT_WRIST, lmu.RIGHT_HIP),
     (lmu.RIGHT_WRIST, lmu.LEFT_HIP),
-    # extra
     (lmu.LEFT_PINKY, lmu.RIGHT_PINKY),
     (lmu.LEFT_THUMB, lmu.RIGHT_THUMB),
     (lmu.NOSE, lmu.LEFT_HIP),
@@ -72,29 +56,22 @@ _DIST_PAIRS = [
     (lmu.RIGHT_WRIST, lmu.RIGHT_KNEE),
     (lmu.LEFT_ELBOW, lmu.LEFT_HIP),
     (lmu.RIGHT_ELBOW, lmu.RIGHT_HIP),
-    # thumbs / index fingers to shoulders
     (lmu.LEFT_THUMB, lmu.LEFT_SHOULDER),
     (lmu.RIGHT_THUMB, lmu.RIGHT_SHOULDER),
     (lmu.LEFT_INDEX, lmu.LEFT_SHOULDER),
     (lmu.RIGHT_INDEX, lmu.RIGHT_SHOULDER),
-    # cross-body
     (lmu.LEFT_INDEX, lmu.RIGHT_SHOULDER),
     (lmu.RIGHT_INDEX, lmu.LEFT_SHOULDER),
     (lmu.LEFT_PINKY, lmu.LEFT_HIP),
     (lmu.RIGHT_PINKY, lmu.RIGHT_HIP),
-    # eye-level hands
     (lmu.LEFT_WRIST, lmu.LEFT_EYE),
     (lmu.RIGHT_WRIST, lmu.RIGHT_EYE),
-    # foot-level hands
     (lmu.LEFT_WRIST, lmu.LEFT_FOOT_INDEX),
     (lmu.RIGHT_WRIST, lmu.RIGHT_FOOT_INDEX),
-    # nose to shoulders
     (lmu.NOSE, lmu.LEFT_SHOULDER),
     (lmu.NOSE, lmu.RIGHT_SHOULDER),
-    # ear–shoulder
     (lmu.LEFT_EAR, lmu.LEFT_SHOULDER),
     (lmu.RIGHT_EAR, lmu.RIGHT_SHOULDER),
-    # more wrist combos
     (lmu.LEFT_WRIST, lmu.RIGHT_ELBOW),
     (lmu.RIGHT_WRIST, lmu.LEFT_ELBOW),
     (lmu.LEFT_WRIST, lmu.LEFT_ANKLE),
@@ -103,8 +80,12 @@ _DIST_PAIRS = [
     (lmu.RIGHT_PINKY, lmu.LEFT_WRIST),
     (lmu.MOUTH_LEFT, lmu.LEFT_WRIST),
     (lmu.MOUTH_RIGHT, lmu.RIGHT_WRIST),
+    # Added missing pair
+    (lmu.LEFT_EYE, lmu.RIGHT_EYE),
 ]
+
 assert len(_DIST_PAIRS) == 66, f"Expected 66 pairs, got {len(_DIST_PAIRS)}"
+
 
 # Key angle triplets (30 angles)
 _ANGLES = [
